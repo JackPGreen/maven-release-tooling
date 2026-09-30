@@ -1,0 +1,81 @@
+name: Release & Deploy
+description: |
+  `deploy`s the project and handles updating of the project version / tagging.
+
+inputs:
+  next-version:
+    required: false
+    description: 'Override next development version (e.g. if current version in master is 5.0-SNAPSHOT, the "next-version" should be 5.1-SNAPSHOT). If not set then the version will be calculated by maven release plugin'
+
+runs:
+  using: composite
+  steps:
+    - name: Configure Git
+      shell: bash
+      run: |
+        git config user.name "${GITHUB_ACTOR}"
+        git config user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+
+    - name: Convert to non-`SNAPSHOT`
+      id: version
+      shell: bash
+      run: |
+        source /dev/stdin <<< "$(curl --fail --retry 5 --retry-all-errors --show-error --silent https://raw.githubusercontent.com/hazelcast/mono-actions/main/.github/scripts/maven.functions.sh)"
+
+        mvn \
+          versions:set \
+          $(get_maven_args) \
+          -DgenerateBackupPoms=false \
+          -DremoveSnapshot=true
+
+        version=$(get_project_version)
+        echo "version=${version}" >> ${GITHUB_OUTPUT}
+
+        git commit --all --message "Release \`${version}\`"
+
+    - name: Tag
+      shell: bash
+      id: tag
+      run: |
+        tag=v${{ steps.version.outputs.version }}
+        echo "tag=${tag}" >> ${GITHUB_OUTPUT}
+
+        git tag ${tag}
+
+    - name: Deploy
+      shell: bash
+      run: |
+        source /dev/stdin <<< "$(curl --fail --retry 5 --retry-all-errors --show-error --silent https://raw.githubusercontent.com/hazelcast/mono-actions/main/.github/scripts/maven.functions.sh)"
+
+        mvn \
+          deploy \
+          $(get_maven_args) \
+          -DskipTests
+
+    - name: Update to new version
+      shell: bash
+      run: |
+        source /dev/stdin <<< "$(curl --fail --retry 5 --retry-all-errors --show-error --silent https://raw.githubusercontent.com/hazelcast/mono-actions/main/.github/scripts/maven.functions.sh)"
+
+        mvn versions:set \
+          $(get_maven_args) \
+          -DgenerateBackupPoms=false \
+          ${NEXT_VERSION:+-DnewVersion="${NEXT_VERSION}"} \
+          ${NEXT_VERSION:--DnextSnapshot=true}
+
+        git commit --all --message "Upgrade version to \`$(get_project_version)\`"
+      env:
+        NEXT_VERSION: ${{ inputs.next-version }}
+
+    - name: Push changes
+      shell: bash
+      run: |
+        git push
+        git push --tags
+
+    - uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
+      with:
+        fail_on_unmatched_files: true
+        files: '**/target/*.jar'
+        name: ${{ steps.version.outputs.version }}
+        tag_name: ${{ steps.tag.outputs.tag }}

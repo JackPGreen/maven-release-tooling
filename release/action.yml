@@ -33,6 +33,7 @@ runs:
         echo "version=${version}" >> ${GITHUB_OUTPUT}
 
         git commit --all --message "Release \`${version}\`"
+        git push
 
     - name: Tag
       shell: bash
@@ -41,7 +42,8 @@ runs:
         tag=v${{ steps.version.outputs.version }}
         echo "tag=${tag}" >> ${GITHUB_OUTPUT}
 
-        git tag ${tag}
+        git tag "${tag}"
+        git push --atomic origin HEAD "refs/tags/${tag}"
 
     - name: Deploy
       shell: bash
@@ -70,14 +72,9 @@ runs:
           "${version_args[@]}"
 
         git commit --all --message "Upgrade version to \`$(get_project_version)\`"
+        git push
       env:
         NEXT_VERSION: ${{ inputs.next-version }}
-
-    - name: Push changes
-      shell: bash
-      run: |
-        git push
-        git push --tags
 
     - uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
       with:

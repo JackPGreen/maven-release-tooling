@@ -11,6 +11,11 @@ inputs:
   next-version:
     required: false
     description: 'Override next development version (e.g. if current version in master is 5.0-SNAPSHOT, the "next-version" should be 5.1-SNAPSHOT). If not set then the version will be calculated by maven versions plugin'
+  release-files:
+    description: 'Files to include in the GitHub release. See https://github.com/softprops/action-gh-release#inputs'
+    required: true
+    default: '**/target/*.jar'
+
 
 runs:
   using: composite
@@ -83,6 +88,6 @@ runs:
     - uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
       with:
         fail_on_unmatched_files: true
-        files: '**/target/*.jar'
+        files: ${{ inputs.release-files }}
         name: ${{ steps.version.outputs.version }}
         tag_name: ${{ steps.tag.outputs.tag }}

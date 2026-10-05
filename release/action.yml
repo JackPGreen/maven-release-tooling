@@ -4,7 +4,8 @@ description: |
   - handles tagging
   - `deploy`s
   - updates project version
-  Expects Maven to be setup to support `mvn deploy`, e.g. an appropriate JDK, repository configuration with credentials etc.
+  Expects Maven to be setup to support `mvn deploy`, e.g. an appropriate JDK, repository configuration with credentials etc
+  Test execution is skipped
   Reference implementation - https://github.com/hazelcast/hazelcast-hibernate/pull/674
 
 inputs:

@@ -58,11 +58,16 @@ runs:
       run: |
         source /dev/stdin <<< "$(curl --fail --retry 5 --retry-all-errors --show-error --silent https://raw.githubusercontent.com/hazelcast/mono-actions/main/.github/scripts/maven.functions.sh)"
 
+        if [[ -n "${NEXT_VERSION}" ]]; then
+          version_args=(-DnewVersion="${NEXT_VERSION}")
+        else
+          version_args=(-DnextSnapshot=true)
+        fi
+
         mvn versions:set \
           $(get_maven_args) \
           -DgenerateBackupPoms=false \
-          ${NEXT_VERSION:+-DnewVersion="${NEXT_VERSION}"} \
-          ${NEXT_VERSION:--DnextSnapshot=true}
+          "${version_args[@]}"
 
         git commit --all --message "Upgrade version to \`$(get_project_version)\`"
       env:

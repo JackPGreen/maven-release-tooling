@@ -5,6 +5,7 @@ description: |
   - `deploy`s
   - updates project version
   Expects Maven to be setup to support `mvn deploy`, e.g. an appropriate JDK, repository configuration with credentials etc.
+  Reference implementation - https://github.com/hazelcast/hazelcast-hibernate/pull/674
 
 inputs:
   next-version:

@@ -1,6 +1,7 @@
 name: Release & Deploy
 description: |
   `deploy`s the project and handles updating of the project version / tagging.
+  Expects Maven to be setup to support `mvn deploy`, e.g. an appropriate JDK, repository configuration with credentials etc.
 
 inputs:
   next-version:

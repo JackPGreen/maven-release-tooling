@@ -1,6 +1,9 @@
 name: Release & Deploy
 description: |
-  `deploy`s the project and handles updating of the project version / tagging.
+  Provides re-usable component to support releasing a simple Maven component:
+  - handles tagging
+  - `deploy`s
+  - updates project version
   Expects Maven to be setup to support `mvn deploy`, e.g. an appropriate JDK, repository configuration with credentials etc.
 
 inputs:

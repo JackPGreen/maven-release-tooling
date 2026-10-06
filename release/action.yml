@@ -11,7 +11,9 @@ description: |
 inputs:
   next-version:
     required: false
-    description: 'Override next development version (e.g. if current version in master is 5.0-SNAPSHOT, the "next-version" should be 5.1-SNAPSHOT). If not set, then the version will be calculated by the Versions Maven Plugin - https://www.mojohaus.org/versions/versions-maven-plugin/set-mojo.html#nextSnapshot'
+    description: |
+      Override next development version (e.g. if current version is `1.2.0-SNAPSHOT`, the next could be be `1.2.1-SNAPSHOT` or `1.3.0-SNAPSHOT`).
+      If not set, then the version will be calculated by the Versions Maven Plugin - https://www.mojohaus.org/versions/versions-maven-plugin/set-mojo.html#nextSnapshot'
   release-files:
     description: 'Files to include in the GitHub release. See https://github.com/softprops/action-gh-release#inputs'
     required: true

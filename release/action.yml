@@ -49,15 +49,16 @@ runs:
         git commit --all --message "Update to \`${version}\` for release"
         git push
 
+    - uses: hazelcast/docker-actions/get-tag-name@master
+      with:
+        VERSION: ${{ steps.version.outputs.version }}
+
     - name: Tag
       shell: bash
       id: tag
       run: |
-        tag=v${{ steps.version.outputs.version }}
-        echo "tag=${tag}" >> ${GITHUB_OUTPUT}
-
-        git tag "${tag}"
-        git push --atomic origin HEAD "refs/tags/${tag}"
+        git tag "${{ steps.tag-name.outputs.TAG_NAME }}"
+        git push --atomic origin HEAD "refs/tags/${{ steps.tag-name.outputs.TAG_NAME }}"
 
     - name: Deploy
       shell: bash
@@ -96,4 +97,4 @@ runs:
         fail_on_unmatched_files: true
         files: ${{ inputs.release-files }}
         name: ${{ steps.version.outputs.version }}
-        tag_name: ${{ steps.tag.outputs.tag }}
+        tag_name: ${{ steps.tag-name.outputs.TAG_NAME }}

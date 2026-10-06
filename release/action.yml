@@ -4,7 +4,7 @@ description: |
   - handles tagging
   - `deploy`s
   - updates project version
-  Expects Maven to be setup to support `mvn deploy`, e.g. an appropriate JDK, repository configuration with credentials etc
+  Expects Maven to be setup to support `./mvnw deploy`, e.g. Maven wrapper, an appropriate JDK, repository configuration with credentials etc
   Test execution is skipped
   Reference implementation - https://github.com/hazelcast/hazelcast-hibernate/pull/674
 
@@ -48,7 +48,7 @@ runs:
       run: |
         source /dev/stdin <<< "$(curl --fail --retry 5 --retry-all-errors --show-error --silent https://raw.githubusercontent.com/hazelcast/mono-actions/main/.github/scripts/maven.functions.sh)"
 
-        mvn \
+        ./mvnw \
           versions:set \
           $(get_maven_args) \
           -DgenerateBackupPoms=false \
@@ -76,7 +76,7 @@ runs:
       run: |
         source /dev/stdin <<< "$(curl --fail --retry 5 --retry-all-errors --show-error --silent https://raw.githubusercontent.com/hazelcast/mono-actions/main/.github/scripts/maven.functions.sh)"
 
-        mvn \
+        ./mvnw \
           deploy \
           $(get_maven_args) \
           -DskipTests
@@ -92,7 +92,7 @@ runs:
           version_args=(-DnextSnapshot=true)
         fi
 
-        mvn versions:set \
+        ./mvnw versions:set \
           $(get_maven_args) \
           -DgenerateBackupPoms=false \
           "${version_args[@]}"

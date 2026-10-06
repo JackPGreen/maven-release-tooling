@@ -44,7 +44,7 @@ runs:
         version=$(get_project_version)
         echo "version=${version}" >> ${GITHUB_OUTPUT}
 
-        git commit --all --message "Release \`${version}\`"
+        git commit --all --message "Update to \`${version}\` for release"
         git push
 
     - name: Tag
@@ -83,7 +83,7 @@ runs:
           -DgenerateBackupPoms=false \
           "${version_args[@]}"
 
-        git commit --all --message "Upgrade version to \`$(get_project_version)\`"
+        git commit --all --message "Update version to \`$(get_project_version)\`"
         git push
       env:
         NEXT_VERSION: ${{ inputs.next-version }}

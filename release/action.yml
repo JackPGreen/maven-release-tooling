@@ -25,6 +25,17 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Validate `next-snapshot-version`
+      shell: bash
+      if: inputs.next-snapshot-version != '' && !contains(inputs.next-snapshot-version, 'SNAPSHOT')
+      run: |
+        source /dev/stdin <<< "$(curl --fail --retry 5 --retry-all-errors --show-error --silent https://raw.githubusercontent.com/hazelcast/github-actions-common-scripts/main/logging.functions.sh)"
+
+        echoerr "${NEXT_SNAPSHOT_VERSION} is not a SNAPSHOT"
+        exit 1
+      env:
+        NEXT_SNAPSHOT_VERSION: ${{ inputs.next-snapshot-version }}
+
     - name: Configure Git
       shell: bash
       run: |

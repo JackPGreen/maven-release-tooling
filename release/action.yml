@@ -1,0 +1,118 @@
+name: Release & Deploy
+description: |
+  Provides re-usable component to support releasing a simple Maven component:
+    - handles tagging
+    - `deploy`s
+    - updates project version
+
+  Expects Maven to be setup to support `./mvnw deploy`, e.g. Maven wrapper, an appropriate JDK, repository configuration with credentials etc
+  Test execution is skipped
+  Additional Maven-specific parameters can be supplied via `env`, e.g,. (non-exhaustive):
+    - `MAVEN_ARGS`
+    - `MAVEN_USERNAME`
+    - `MAVEN_PASSWORD`
+    - `MAVEN_GPG_PASSPHRASE`
+    - etc
+  Reference implementation - https://github.com/hazelcast/hazelcast-hibernate/pull/674
+
+inputs:
+  next-snapshot-version:
+    required: false
+    description: |
+      Override next `SNAPSHOT` version (e.g. if current version is `1.2.0-SNAPSHOT`, the next could be be `1.2.1-SNAPSHOT` or `1.3.0-SNAPSHOT`).
+      If not set, then the version will be calculated by the Versions Maven Plugin - https://www.mojohaus.org/versions/versions-maven-plugin/set-mojo.html#nextSnapshot'.
+  release-files:
+    description: |
+      Files to include in the GitHub release. See https://github.com/softprops/action-gh-release#inputs.
+      If not set, defaults to including all JARs.
+    required: false
+    default: '**/target/*.jar'
+
+
+runs:
+  using: composite
+  steps:
+    - name: Validate `next-snapshot-version`
+      shell: bash
+      if: inputs.next-snapshot-version != '' && !contains(inputs.next-snapshot-version, 'SNAPSHOT')
+      run: |
+        source /dev/stdin <<< "$(curl --fail --retry 5 --retry-all-errors --show-error --silent https://raw.githubusercontent.com/hazelcast/github-actions-common-scripts/main/logging.functions.sh)"
+
+        echoerr "${NEXT_SNAPSHOT_VERSION} is not a SNAPSHOT"
+        exit 1
+      env:
+        NEXT_SNAPSHOT_VERSION: ${{ inputs.next-snapshot-version }}
+
+    - name: Configure Git
+      shell: bash
+      run: |
+        git config user.name "${GITHUB_ACTOR}"
+        git config user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+
+    - name: Convert to non-`SNAPSHOT`
+      id: version
+      shell: bash
+      run: |
+        source /dev/stdin <<< "$(curl --fail --retry 5 --retry-all-errors --show-error --silent https://raw.githubusercontent.com/hazelcast/mono-actions/main/.github/scripts/maven.functions.sh)"
+
+        ./mvnw \
+          versions:set \
+          $(get_maven_args) \
+          -DgenerateBackupPoms=false \
+          -DremoveSnapshot=true
+
+        version=$(get_project_version)
+        echo "version=${version}" >> ${GITHUB_OUTPUT}
+
+        git commit --all --message "Update to \`${version}\` for release"
+        git push
+
+    - uses: hazelcast/docker-actions/get-tag-name@master
+      with:
+        VERSION: ${{ steps.version.outputs.version }}
+
+    - name: Tag
+      shell: bash
+      id: tag
+      run: |
+        git tag "${{ steps.tag-name.outputs.TAG_NAME }}"
+        git push --atomic origin HEAD "refs/tags/${{ steps.tag-name.outputs.TAG_NAME }}"
+
+    - name: Deploy
+      shell: bash
+      run: |
+        source /dev/stdin <<< "$(curl --fail --retry 5 --retry-all-errors --show-error --silent https://raw.githubusercontent.com/hazelcast/mono-actions/main/.github/scripts/maven.functions.sh)"
+
+        ./mvnw \
+          deploy \
+          $(get_maven_args) \
+          -DskipTests
+
+    - name: Update to new version
+      shell: bash
+      run: |
+        source /dev/stdin <<< "$(curl --fail --retry 5 --retry-all-errors --show-error --silent https://raw.githubusercontent.com/hazelcast/mono-actions/main/.github/scripts/maven.functions.sh)"
+
+        if [[ -n "${NEXT_SNAPSHOT_VERSION}" ]]; then
+          version_args=(-DnewVersion="${NEXT_SNAPSHOT_VERSION}")
+        else
+          version_args=(-DnextSnapshot=true)
+        fi
+
+        ./mvnw versions:set \
+          $(get_maven_args) \
+          -DgenerateBackupPoms=false \
+          "${version_args[@]}"
+
+        git commit --all --message "Update version to \`$(get_project_version)\`"
+        git push
+      env:
+        NEXT_SNAPSHOT_VERSION: ${{ inputs.next-snapshot-version }}
+
+    - uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
+      with:
+        append_body: true
+        fail_on_unmatched_files: true
+        files: ${{ inputs.release-files }}
+        name: ${{ steps.version.outputs.version }}
+        tag_name: ${{ steps.tag-name.outputs.TAG_NAME }}
